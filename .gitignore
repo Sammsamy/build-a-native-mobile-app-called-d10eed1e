@@ -1,0 +1,57 @@
+
+# Sandbox system files - DO NOT TRACK (added by Appifex)
+/.bash_logout
+/.bashrc
+/.bash_history
+/.bash_profile
+/.profile
+/.gitconfig
+/.cache
+/.config
+/.npm
+/.local
+/.wget-hsts
+/.yarnrc
+
+# Build artifacts and dependencies - NEVER COMMIT (added by Appifex)
+# These patterns apply to all subdirectories (mobile/, web/, backend/)
+node_modules/
+dist/
+build/
+.expo/
+web-build/
+.vercel/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+*.egg-info/
+.eggs/
+
+# Logs and temporary files
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*~
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files (should use secrets management)
+.env
+.env.local
+.env.*.local
+
+# Test and coverage
+coverage/
+.nyc_output/
+.pytest_cache/
+htmlcov/
