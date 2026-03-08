@@ -49,6 +49,7 @@ function RootLayout() {
               headerTitleStyle: {
                 color: '#F7FBFF',
                 fontWeight: '600',
+                fontSize: 17,
               },
               contentStyle: { backgroundColor: '#0D1522' },
             }}

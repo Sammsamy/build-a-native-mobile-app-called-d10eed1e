@@ -2,10 +2,17 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 
 import { Alert, ScrollView, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 
-import { SoftSectionCard, SparkTrend, TimelineMeter } from '@/components/labbuddy/ui';
+import {
+  IconBadge,
+  ScreenHeader,
+  SectionHeading,
+  SoftSectionCard,
+  SparkTrend,
+  TimelineMeter,
+  labBuddyPalette,
+} from '@/components/labbuddy/ui';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { StyledSafeAreaView } from '@/lib/styled';
@@ -51,35 +58,32 @@ export default function HistoryScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120, gap: 14 }} showsVerticalScrollIndicator={false}>
-        <View className="gap-2 px-1 pb-1">
-          <Text className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: '#9CC0FF' }}>History</Text>
-          <Text className="text-[28px] font-semibold tracking-[-0.45px]" style={{ color: '#F7FBFF' }}>History &amp; trends</Text>
-          <Text className="text-[15px] leading-6" style={{ color: '#AEBCCD' }}>
-            The more unlocked reports you add, the more useful your story becomes.
-          </Text>
-        </View>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120, gap: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <ScreenHeader
+          eyebrow="History"
+          title="History and trends"
+          description="The more unlocked reports you add, the more useful your story becomes."
+        />
 
         <SoftSectionCard>
           <View className="gap-4">
             <View className="flex-row items-start justify-between gap-4">
-              <View className="flex-1 gap-2">
-                <Text className="text-lg font-semibold tracking-[-0.2px]" style={{ color: '#12243A' }}>Grow your timeline</Text>
-                <Text className="text-sm leading-6 text-text-secondary">
-                  Add older reports to unlock more context around changes in markers like LDL and A1C.
-                </Text>
+              <View className="flex-1">
+                <SectionHeading
+                  title="Grow your timeline"
+                  description="Add older reports to unlock more context around changes in markers like LDL and A1C."
+                />
               </View>
-              <View className="h-12 w-12 items-center justify-center rounded-[20px]" style={{ backgroundColor: '#EAF1FF' }}>
-                <Ionicons name="time" size={22} color="#1E67FF" />
-              </View>
+              <IconBadge icon="time" tone="primary" />
             </View>
             <TimelineMeter
               score={dashboard?.profile.timeline_completeness_score ?? 0}
               caption={dashboard?.reports[0]?.timeline_hint ?? 'Upload 2 older reports to see your LDL/A1C timeline.'}
             />
-            <Button onPress={() => void handleUploadOlderReport()}>
-              Upload 2 older reports to grow your timeline
-            </Button>
+            <Button onPress={() => void handleUploadOlderReport()}>Upload older reports</Button>
           </View>
         </SoftSectionCard>
 
@@ -87,32 +91,36 @@ export default function HistoryScreen() {
           <SoftSectionCard>
             <View className="gap-4">
               <View className="flex-row items-center justify-between gap-4">
-                <View className="flex-1 gap-1">
-                  <Text className="text-lg font-semibold tracking-[-0.2px]">Health Age (estimate) – Beta</Text>
-                  <Text className="text-sm leading-6 text-text-secondary">A lightweight estimate based on your unlocked trend data.</Text>
+                <View className="flex-1">
+                  <SectionHeading
+                    title="Health Age (estimate) — Beta"
+                    description="A lightweight estimate based on your unlocked trend data."
+                  />
                 </View>
-                <View className="rounded-[20px] px-4 py-3" style={{ backgroundColor: '#EAF1FF' }}>
-                  <Text className="text-2xl font-semibold" style={{ color: '#1E67FF' }}>{dashboard.health_age.estimated_age}</Text>
+                <View className="rounded-[20px] px-4 py-3" style={{ backgroundColor: labBuddyPalette.primarySoft }}>
+                  <Text className="text-2xl font-semibold leading-8" style={{ color: labBuddyPalette.primary }}>
+                    {dashboard.health_age.estimated_age}
+                  </Text>
                 </View>
               </View>
-              <Text className="text-sm leading-6 text-text-secondary">Confidence: {dashboard.health_age.confidence_label} • {dashboard.health_age.confidence_reason}</Text>
+              <Text className="text-sm leading-6 text-text-secondary">
+                Confidence: {dashboard.health_age.confidence_label} • {dashboard.health_age.confidence_reason}
+              </Text>
               <Text className="text-xs leading-5 text-text-tertiary">{dashboard.health_age.disclaimer}</Text>
             </View>
           </SoftSectionCard>
         ) : (
           <SoftSectionCard>
-            <View className="gap-3">
-              <Text className="text-lg font-semibold tracking-[-0.2px]">Health Age (estimate) – Beta</Text>
-              <Text className="text-sm leading-6 text-text-secondary">
-                This appears once you have enough unlocked history to make an educational estimate with a confidence label.
-              </Text>
-            </View>
+            <SectionHeading
+              title="Health Age (estimate) — Beta"
+              description="This appears once you have enough unlocked history for an educational estimate with a confidence label."
+            />
           </SoftSectionCard>
         )}
 
         <SoftSectionCard>
           <View className="gap-4">
-            <Text className="text-lg font-semibold tracking-[-0.2px]">Trendlines</Text>
+            <SectionHeading title="Trendlines" />
             {dashboard?.trend_series.length ? (
               <View className="gap-3">
                 {dashboard.trend_series.slice(0, 4).map((series) => (
@@ -121,7 +129,7 @@ export default function HistoryScreen() {
               </View>
             ) : (
               <Text className="text-sm leading-6 text-text-secondary">
-                Unlock at least 2 reports with the same biomarkers to start seeing simple trendlines here.
+                Unlock at least 2 reports with the same biomarkers to see simple trendlines here.
               </Text>
             )}
           </View>
@@ -129,27 +137,34 @@ export default function HistoryScreen() {
 
         <SoftSectionCard>
           <View className="gap-4">
-            <Text className="text-lg font-semibold tracking-[-0.2px]">Saved reports</Text>
+            <SectionHeading title="Saved reports" />
             <View className="gap-3">
-              {dashboard?.reports.length ? dashboard.reports.map((report) => (
-                <View
-                  key={report.id}
-                  className="gap-2 rounded-[24px] border border-border p-4"
-                  style={{ backgroundColor: '#F1F6FD' }}
-                >
-                  <View className="flex-row items-center justify-between gap-4">
-                    <View className="flex-1 gap-1">
-                      <Text className="font-semibold tracking-[-0.15px]" style={{ color: '#12243A' }}>{report.report_label}</Text>
-                      <Text className="text-xs text-text-secondary">{report.collected_on ?? 'Date not available'} • {report.unlocked ? 'Unlocked' : 'Preview only'}</Text>
+              {dashboard?.reports.length ? (
+                dashboard.reports.map((report) => (
+                  <View
+                    key={report.id}
+                    className="gap-3 rounded-[20px] border border-border bg-surface-muted p-4"
+                  >
+                    <View className="flex-row items-center justify-between gap-4">
+                      <View className="flex-1 gap-1">
+                        <Text className="font-semibold leading-6" style={{ color: labBuddyPalette.text }}>
+                          {report.report_label}
+                        </Text>
+                        <Text className="text-xs leading-5 text-text-secondary">
+                          {report.collected_on ?? 'Date not available'} • {report.unlocked ? 'Unlocked' : 'Preview only'}
+                        </Text>
+                      </View>
+                      <Button variant="ghost" size="sm" onPress={() => router.push(`/report/${report.id}`)}>
+                        Open
+                      </Button>
                     </View>
-                    <Button variant="ghost" size="sm" onPress={() => router.push(`/report/${report.id}`)}>
-                      Open
-                    </Button>
+                    <Text className="text-sm leading-6 text-text-secondary">{report.preview_summary}</Text>
                   </View>
-                  <Text className="text-sm leading-6 text-text-secondary">{report.preview_summary}</Text>
-                </View>
-              )) : (
-                <Text className="text-sm leading-6 text-text-secondary">No saved reports yet. Your unlocked reports will appear here automatically.</Text>
+                ))
+              ) : (
+                <Text className="text-sm leading-6 text-text-secondary">
+                  No saved reports yet. Your unlocked reports will appear here automatically.
+                </Text>
               )}
             </View>
           </View>

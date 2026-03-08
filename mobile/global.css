@@ -5,40 +5,74 @@
 @source "./app";
 @source "./theme";
 
+/*
+  LabBuddy intentionally uses a single visual theme across light/dark variants.
+  The app shell stays dark while cards remain light for a calm, premium contrast system.
+*/
 @layer theme {
   :root {
     @variant light {
-      --color-background: #0D1522;
-      --color-surface: #EEF3FA;
-      --color-surface-elevated: #F8FBFF;
-      --color-text: #12243A;
-      --color-text-secondary: #5A6C84;
-      --color-text-tertiary: #8492A6;
+      --color-background: #0d1522;
+      --color-shell-elevated: #101b2b;
+      --color-shell-muted: #aebccd;
+      --color-shell-accent: #9cc0ff;
+
+      --color-surface: #eef3fa;
+      --color-surface-elevated: #f8fbff;
+      --color-surface-muted: #f1f6fd;
+      --color-surface-tint: #f6faff;
+
+      --color-text: #12243a;
+      --color-text-secondary: #55677f;
+      --color-text-tertiary: #7e8ea4;
       --color-border: rgba(18, 36, 58, 0.1);
-      --color-border-strong: #D9E4F2;
-      --color-primary: #1E67FF;
-      --color-on-primary: #FFFFFF;
-      --color-error: #C4485F;
-      --color-success: #2F8F5B;
-      --color-warning: #BC7A00;
-      --color-input: #EEF4FA;
+      --color-border-strong: #d9e4f2;
+
+      --color-primary: #1e67ff;
+      --color-primary-soft: #eaf1ff;
+      --color-on-primary: #ffffff;
+
+      --color-success: #2f8f5b;
+      --color-success-soft: #eaf7f0;
+      --color-warning: #bc7a00;
+      --color-warning-soft: #fff6e6;
+      --color-error: #c4485f;
+      --color-error-soft: #fdebec;
+
+      --color-progress-track: #e3ebf6;
+      --color-input: #eef4fa;
     }
 
     @variant dark {
-      --color-background: #0D1522;
-      --color-surface: #EEF3FA;
-      --color-surface-elevated: #F8FBFF;
-      --color-text: #12243A;
-      --color-text-secondary: #5A6C84;
-      --color-text-tertiary: #8492A6;
+      --color-background: #0d1522;
+      --color-shell-elevated: #101b2b;
+      --color-shell-muted: #aebccd;
+      --color-shell-accent: #9cc0ff;
+
+      --color-surface: #eef3fa;
+      --color-surface-elevated: #f8fbff;
+      --color-surface-muted: #f1f6fd;
+      --color-surface-tint: #f6faff;
+
+      --color-text: #12243a;
+      --color-text-secondary: #55677f;
+      --color-text-tertiary: #7e8ea4;
       --color-border: rgba(18, 36, 58, 0.1);
-      --color-border-strong: #D9E4F2;
-      --color-primary: #1E67FF;
-      --color-on-primary: #FFFFFF;
-      --color-error: #C4485F;
-      --color-success: #2F8F5B;
-      --color-warning: #BC7A00;
-      --color-input: #EEF4FA;
+      --color-border-strong: #d9e4f2;
+
+      --color-primary: #1e67ff;
+      --color-primary-soft: #eaf1ff;
+      --color-on-primary: #ffffff;
+
+      --color-success: #2f8f5b;
+      --color-success-soft: #eaf7f0;
+      --color-warning: #bc7a00;
+      --color-warning-soft: #fff6e6;
+      --color-error: #c4485f;
+      --color-error-soft: #fdebec;
+
+      --color-progress-track: #e3ebf6;
+      --color-input: #eef4fa;
     }
   }
 }
