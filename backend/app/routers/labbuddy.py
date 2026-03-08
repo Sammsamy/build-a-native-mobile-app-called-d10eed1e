@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
-from app.dependencies import get_db
+from app.dependencies import get_authenticated_device_id, get_db
+from app.services.device_auth import create_device_session_token, utc_now
 from app.services.lab_report_engine import (
     average_timeline_score,
     build_ai_answer,
@@ -113,9 +112,23 @@ def _load_profile_with_reports(db: Session, device_id: str) -> models.DeviceProf
     )
 
 
+@router.post("/device/session", response_model=schemas.DeviceSessionResponse)
+def create_device_session(payload: schemas.DeviceSessionRequest, db: Session = Depends(get_db)):
+    profile = _get_or_create_device_profile(db, payload.device_id)
+    auth_token, expires_at = create_device_session_token(profile.device_id)
+    return schemas.DeviceSessionResponse(
+        device_id=profile.device_id,
+        auth_token=auth_token,
+        expires_at=expires_at,
+    )
+
+
 @router.get("/dashboard", response_model=schemas.DashboardResponse)
-def get_dashboard(device_id: str, db: Session = Depends(get_db)):
-    profile = _load_profile_with_reports(db, device_id)
+def get_dashboard(
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     reports = sorted(
         profile.reports,
         key=lambda item: (item.collected_on or item.created_at.date(), item.created_at),
@@ -162,18 +175,25 @@ def get_dashboard(device_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/device/acknowledge-safety", response_model=schemas.ActionResponse)
-def acknowledge_safety(payload: schemas.SafetyAcknowledgeRequest, db: Session = Depends(get_db)):
-    profile = _get_or_create_device_profile(db, payload.device_id)
+def acknowledge_safety(
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile = _get_or_create_device_profile(db, authenticated_device_id)
     profile.safety_acknowledged = True
-    profile.safety_acknowledged_at = datetime.utcnow()
+    profile.safety_acknowledged_at = utc_now()
     db.add(profile)
     db.commit()
     return schemas.ActionResponse(success=True, message="Safety notice saved on this device.")
 
 
 @router.post("/reports/analyze", response_model=schemas.ReportDetail)
-def analyze_report(payload: schemas.AnalyzeReportRequest, db: Session = Depends(get_db)):
-    profile = _load_profile_with_reports(db, payload.device_id)
+def analyze_report(
+    payload: schemas.AnalyzeReportRequest,
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     blueprint = generate_report_blueprint(
         original_filename=payload.original_filename,
         collected_on=payload.collected_on,
@@ -209,14 +229,18 @@ def analyze_report(payload: schemas.AnalyzeReportRequest, db: Session = Depends(
         db.add(models.BiomarkerResult(report_id=report.id, **biomarker))
 
     db.commit()
-    profile = _load_profile_with_reports(db, payload.device_id)
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     saved_report = next(item for item in profile.reports if item.id == report.id)
     return _serialize_report_detail(saved_report, profile, profile.reports)
 
 
 @router.get("/reports/{report_id}", response_model=schemas.ReportDetail)
-def get_report(report_id: int, device_id: str, db: Session = Depends(get_db)):
-    profile = _load_profile_with_reports(db, device_id)
+def get_report(
+    report_id: int,
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     report = next((item for item in profile.reports if item.id == report_id), None)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -224,22 +248,32 @@ def get_report(report_id: int, device_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/reports/{report_id}/unlock", response_model=schemas.ReportDetail)
-def unlock_report(report_id: int, payload: schemas.UnlockReportRequest, db: Session = Depends(get_db)):
-    profile, report = _get_report_for_device(db, report_id, payload.device_id)
+def unlock_report(
+    report_id: int,
+    payload: schemas.UnlockReportRequest,
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile, report = _get_report_for_device(db, report_id, authenticated_device_id)
     report.unlocked = True
     report.unlock_source = payload.product_key
-    report.unlocked_at = datetime.utcnow()
+    report.unlocked_at = utc_now()
     report.purchase_price_label = REPORT_UNLOCK_PRICE
     db.add(report)
     db.commit()
-    profile = _load_profile_with_reports(db, payload.device_id)
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     refreshed_report = next(item for item in profile.reports if item.id == report_id)
     return _serialize_report_detail(refreshed_report, profile, profile.reports)
 
 
 @router.post("/reports/{report_id}/ask", response_model=schemas.AskReportQuestionResponse)
-def ask_report_question(report_id: int, payload: schemas.AskReportQuestionRequest, db: Session = Depends(get_db)):
-    profile, report = _get_report_for_device(db, report_id, payload.device_id)
+def ask_report_question(
+    report_id: int,
+    payload: schemas.AskReportQuestionRequest,
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile, report = _get_report_for_device(db, report_id, authenticated_device_id)
 
     if not report.unlocked and not profile.yearly_subscription_active and report.free_ai_question_used:
         raise HTTPException(status_code=403, detail="Unlock this report to ask more questions.")
@@ -259,7 +293,7 @@ def ask_report_question(report_id: int, payload: schemas.AskReportQuestionReques
         db.add(report)
 
     db.commit()
-    profile = _load_profile_with_reports(db, payload.device_id)
+    profile = _load_profile_with_reports(db, authenticated_device_id)
     refreshed_report = next(item for item in profile.reports if item.id == report_id)
     detail = _serialize_report_detail(refreshed_report, profile, profile.reports)
     answer = schemas.AiMessage.model_validate(refreshed_report.ai_messages[-1])
@@ -271,8 +305,11 @@ def ask_report_question(report_id: int, payload: schemas.AskReportQuestionReques
 
 
 @router.post("/purchases/restore", response_model=schemas.RestorePurchasesResponse)
-def restore_purchases(payload: schemas.PurchaseRestoreRequest, db: Session = Depends(get_db)):
-    profile = _get_or_create_device_profile(db, payload.device_id)
+def restore_purchases(
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
+    profile = _get_or_create_device_profile(db, authenticated_device_id)
     return schemas.RestorePurchasesResponse(
         success=True,
         message="Purchase restore is scaffolded and ready for RevenueCat integration.",
@@ -281,10 +318,13 @@ def restore_purchases(payload: schemas.PurchaseRestoreRequest, db: Session = Dep
 
 
 @router.delete("/data", response_model=schemas.ActionResponse)
-def delete_all_data(device_id: str, db: Session = Depends(get_db)):
+def delete_all_data(
+    authenticated_device_id: str = Depends(get_authenticated_device_id),
+    db: Session = Depends(get_db),
+):
     profile = (
         db.query(models.DeviceProfile)
-        .filter(models.DeviceProfile.device_id == device_id)
+        .filter(models.DeviceProfile.device_id == authenticated_device_id)
         .first()
     )
     if profile:

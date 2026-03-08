@@ -17,7 +17,9 @@ import { Text } from '@/components/ui/Text';
 import {
   acknowledgeSafety,
   analyzeReport,
+  ApiError,
   askQuestion,
+  createDeviceSession,
   createRuntimeUploadContract,
   deleteAllData as deleteAllDataRequest,
   getDashboard,
@@ -29,7 +31,9 @@ import {
 import {
   clearLocalLabBuddyStorage,
   getDeviceId,
+  getStoredDeviceSession,
   hasAcknowledgedDisclaimer,
+  saveDeviceSession,
   saveDisclaimerAcknowledgement,
 } from '@/lib/device';
 
@@ -38,6 +42,11 @@ interface AnalyzeOptions {
   reportLabel?: string;
   collectedOn?: string;
   isHistoricalUpload: boolean;
+}
+
+interface AuthSession {
+  deviceId: string;
+  authToken: string;
 }
 
 interface LabBuddyContextValue {
@@ -73,6 +82,14 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function isSessionStillValid(expiresAt: string): boolean {
+  const expiresAtMs = Date.parse(expiresAt);
+  if (Number.isNaN(expiresAtMs)) {
+    return false;
+  }
+  return expiresAtMs - Date.now() > 5 * 60 * 1000;
+}
+
 async function assetToBlob(uri: string): Promise<Blob> {
   const response = await fetch(uri);
   return response.blob();
@@ -86,51 +103,91 @@ export function LabBuddyProvider({ children }: PropsWithChildren) {
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
 
-  const refreshDashboard = useCallback(async () => {
-    const resolvedDeviceId = deviceId ?? await getDeviceId();
-    if (!deviceId) {
-      setDeviceId(resolvedDeviceId);
+  const ensureAuthenticatedSession = useCallback(async (forceRefresh = false): Promise<AuthSession> => {
+    const resolvedDeviceId = await getDeviceId();
+    setDeviceId(resolvedDeviceId);
+
+    if (!forceRefresh) {
+      const storedSession = await getStoredDeviceSession();
+      if (storedSession && isSessionStillValid(storedSession.expiresAt)) {
+        return {
+          deviceId: resolvedDeviceId,
+          authToken: storedSession.authToken,
+        };
+      }
     }
-    const nextDashboard = await getDashboard(resolvedDeviceId);
+
+    const session = await createDeviceSession(resolvedDeviceId);
+    await saveDeviceSession({
+      authToken: session.auth_token,
+      expiresAt: session.expires_at,
+    });
+    return {
+      deviceId: resolvedDeviceId,
+      authToken: session.auth_token,
+    };
+  }, []);
+
+  const withAuthenticatedSession = useCallback(async <T,>(
+    operation: (session: AuthSession) => Promise<T>,
+  ): Promise<T> => {
+    let session = await ensureAuthenticatedSession(false);
+
+    try {
+      return await operation(session);
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) {
+        session = await ensureAuthenticatedSession(true);
+        return operation(session);
+      }
+      throw error;
+    }
+  }, [ensureAuthenticatedSession]);
+
+  const refreshDashboard = useCallback(async () => {
+    const nextDashboard = await withAuthenticatedSession(async (session) => {
+      const currentDashboard = await getDashboard(session.authToken);
+      setDeviceId(session.deviceId);
+      return currentDashboard;
+    });
     setDashboard(nextDashboard);
-  }, [deviceId]);
+  }, [withAuthenticatedSession]);
 
   const bootstrap = useCallback(async () => {
     try {
       setIsBootstrapping(true);
-      const resolvedDeviceId = await getDeviceId();
-      const locallyAcknowledged = await hasAcknowledgedDisclaimer();
-      setDeviceId(resolvedDeviceId);
+      const [session, locallyAcknowledged] = await Promise.all([
+        ensureAuthenticatedSession(false),
+        hasAcknowledgedDisclaimer(),
+      ]);
+      setDeviceId(session.deviceId);
       setDisclaimerVisible(!locallyAcknowledged);
-      const nextDashboard = await getDashboard(resolvedDeviceId);
+      const nextDashboard = await getDashboard(session.authToken);
       setDashboard(nextDashboard);
     } finally {
       setIsBootstrapping(false);
     }
-  }, []);
+  }, [ensureAuthenticatedSession]);
 
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
 
   const getReportDetail = useCallback(async (reportId: number) => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
     const cached = reportDetails[reportId];
     if (cached) {
       return cached;
     }
-    const detail = await getReport(reportId, deviceId);
+
+    const detail = await withAuthenticatedSession(async (session) => {
+      setDeviceId(session.deviceId);
+      return getReport(reportId, session.authToken);
+    });
     setReportDetails((current) => ({ ...current, [reportId]: detail }));
     return detail;
-  }, [deviceId, reportDetails]);
+  }, [reportDetails, withAuthenticatedSession]);
 
   const analyzeAsset = useCallback(async (asset: ImagePickerAsset, options: AnalyzeOptions) => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
-
     try {
       setLoadingMessage(LOADING_STAGES[0]);
       const blob = await assetToBlob(asset.uri);
@@ -145,16 +202,18 @@ export function LabBuddyProvider({ children }: PropsWithChildren) {
       await new Promise((resolve) => setTimeout(resolve, 250));
       setLoadingMessage(LOADING_STAGES[3]);
 
-      const detail = await analyzeReport({
-        device_id: deviceId,
-        report_label: options.reportLabel,
-        source_type: options.sourceType,
-        content_type: contentType,
-        original_filename: contract.original_filename,
-        image_public_url: contract.public_url,
-        image_object_key: contract.object_key,
-        collected_on: options.collectedOn,
-        is_historical_upload: options.isHistoricalUpload,
+      const detail = await withAuthenticatedSession(async (session) => {
+        setDeviceId(session.deviceId);
+        return analyzeReport({
+          report_label: options.reportLabel,
+          source_type: options.sourceType,
+          content_type: contentType,
+          original_filename: contract.original_filename,
+          image_public_url: contract.public_url,
+          image_object_key: contract.object_key,
+          collected_on: options.collectedOn,
+          is_historical_upload: options.isHistoricalUpload,
+        }, session.authToken);
       });
 
       setLoadingMessage(LOADING_STAGES[4]);
@@ -166,18 +225,16 @@ export function LabBuddyProvider({ children }: PropsWithChildren) {
     } finally {
       setLoadingMessage(null);
     }
-  }, [deviceId, refreshDashboard]);
+  }, [refreshDashboard, withAuthenticatedSession]);
 
   const unlockSelectedReport = useCallback(async (reportId: number) => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
-
     setLoadingMessage('Unlocking your full report…');
     try {
-      const detail = await unlockReport(reportId, {
-        device_id: deviceId,
-        product_key: 'report_unlock',
+      const detail = await withAuthenticatedSession(async (session) => {
+        setDeviceId(session.deviceId);
+        return unlockReport(reportId, {
+          product_key: 'report_unlock',
+        }, session.authToken);
       });
       setReportDetails((current) => ({ ...current, [detail.id]: detail }));
       await refreshDashboard();
@@ -187,18 +244,16 @@ export function LabBuddyProvider({ children }: PropsWithChildren) {
     } finally {
       setLoadingMessage(null);
     }
-  }, [deviceId, refreshDashboard]);
+  }, [refreshDashboard, withAuthenticatedSession]);
 
   const askReportQuestion = useCallback(async (reportId: number, question: string) => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
-
     setLoadingMessage('Thinking through your question…');
     try {
-      const response = await askQuestion(reportId, {
-        device_id: deviceId,
-        question,
+      const response = await withAuthenticatedSession(async (session) => {
+        setDeviceId(session.deviceId);
+        return askQuestion(reportId, {
+          question,
+        }, session.authToken);
       });
       setReportDetails((current) => ({ ...current, [reportId]: response.report }));
       await refreshDashboard();
@@ -208,40 +263,38 @@ export function LabBuddyProvider({ children }: PropsWithChildren) {
     } finally {
       setLoadingMessage(null);
     }
-  }, [deviceId, refreshDashboard]);
+  }, [refreshDashboard, withAuthenticatedSession]);
 
   const acknowledgeDisclaimer = useCallback(async () => {
-    if (!deviceId) {
-      return;
-    }
     await Promise.all([
       saveDisclaimerAcknowledgement(),
-      acknowledgeSafety(deviceId),
+      withAuthenticatedSession(async (session) => {
+        setDeviceId(session.deviceId);
+        await acknowledgeSafety(session.authToken);
+      }),
     ]);
     setDisclaimerVisible(false);
     await refreshDashboard();
-  }, [deviceId, refreshDashboard]);
+  }, [refreshDashboard, withAuthenticatedSession]);
 
   const restorePurchases = useCallback(async () => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
-    const response = await restorePurchasesRequest(deviceId);
+    const response = await withAuthenticatedSession(async (session) => {
+      setDeviceId(session.deviceId);
+      return restorePurchasesRequest(session.authToken);
+    });
     await refreshDashboard();
     return response.message;
-  }, [deviceId, refreshDashboard]);
+  }, [refreshDashboard, withAuthenticatedSession]);
 
   const deleteAllData = useCallback(async () => {
-    if (!deviceId) {
-      throw new Error('LabBuddy is still loading.');
-    }
-    await deleteAllDataRequest(deviceId);
+    const session = await ensureAuthenticatedSession(false);
+    await deleteAllDataRequest(session.authToken);
     await clearLocalLabBuddyStorage();
     setDashboard(null);
     setReportDetails({});
     setDeviceId(null);
     await bootstrap();
-  }, [bootstrap, deviceId]);
+  }, [bootstrap, ensureAuthenticatedSession]);
 
   const value = useMemo<LabBuddyContextValue>(() => ({
     deviceId,

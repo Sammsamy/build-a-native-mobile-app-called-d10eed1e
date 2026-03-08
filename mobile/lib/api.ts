@@ -4,6 +4,7 @@ import type {
   AskReportQuestionPayload,
   AskReportQuestionResponse,
   DashboardResponse,
+  DeviceSessionResponse,
   ReportDetail,
   RestorePurchasesResponse,
   RuntimeUploadContract,
@@ -12,13 +13,35 @@ import type {
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
-async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export class ApiError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+  }
+}
+
+async function apiFetch<T>(endpoint: string, options?: RequestInit, authToken?: string): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (options?.headers) {
+    const providedHeaders = new Headers(options.headers);
+    providedHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
+  }
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers ?? {}),
-    },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -31,62 +54,68 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     } catch {
       // Ignore JSON parsing issues and use fallback message.
     }
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
 
   return (await response.json()) as T;
 }
 
-export async function getDashboard(deviceId: string): Promise<DashboardResponse> {
-  const query = new URLSearchParams({ device_id: deviceId }).toString();
-  return apiFetch<DashboardResponse>(`/labbuddy/dashboard?${query}`);
+export async function createDeviceSession(deviceId: string): Promise<DeviceSessionResponse> {
+  return apiFetch<DeviceSessionResponse>('/labbuddy/device/session', {
+    method: 'POST',
+    body: JSON.stringify({ device_id: deviceId }),
+  });
 }
 
-export async function getReport(reportId: number, deviceId: string): Promise<ReportDetail> {
-  const query = new URLSearchParams({ device_id: deviceId }).toString();
-  return apiFetch<ReportDetail>(`/labbuddy/reports/${reportId}?${query}`);
+export async function getDashboard(authToken: string): Promise<DashboardResponse> {
+  return apiFetch<DashboardResponse>('/labbuddy/dashboard', undefined, authToken);
 }
 
-export async function analyzeReport(payload: AnalyzeReportPayload): Promise<ReportDetail> {
+export async function getReport(reportId: number, authToken: string): Promise<ReportDetail> {
+  return apiFetch<ReportDetail>(`/labbuddy/reports/${reportId}`, undefined, authToken);
+}
+
+export async function analyzeReport(payload: AnalyzeReportPayload, authToken: string): Promise<ReportDetail> {
   return apiFetch<ReportDetail>('/labbuddy/reports/analyze', {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }, authToken);
 }
 
-export async function unlockReport(reportId: number, payload: UnlockReportPayload): Promise<ReportDetail> {
+export async function unlockReport(reportId: number, payload: UnlockReportPayload, authToken: string): Promise<ReportDetail> {
   return apiFetch<ReportDetail>(`/labbuddy/reports/${reportId}/unlock`, {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }, authToken);
 }
 
-export async function askQuestion(reportId: number, payload: AskReportQuestionPayload): Promise<AskReportQuestionResponse> {
+export async function askQuestion(
+  reportId: number,
+  payload: AskReportQuestionPayload,
+  authToken: string,
+): Promise<AskReportQuestionResponse> {
   return apiFetch<AskReportQuestionResponse>(`/labbuddy/reports/${reportId}/ask`, {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }, authToken);
 }
 
-export async function acknowledgeSafety(deviceId: string): Promise<ActionResponse> {
+export async function acknowledgeSafety(authToken: string): Promise<ActionResponse> {
   return apiFetch<ActionResponse>('/labbuddy/device/acknowledge-safety', {
     method: 'POST',
-    body: JSON.stringify({ device_id: deviceId }),
-  });
+  }, authToken);
 }
 
-export async function restorePurchases(deviceId: string): Promise<RestorePurchasesResponse> {
+export async function restorePurchases(authToken: string): Promise<RestorePurchasesResponse> {
   return apiFetch<RestorePurchasesResponse>('/labbuddy/purchases/restore', {
     method: 'POST',
-    body: JSON.stringify({ device_id: deviceId }),
-  });
+  }, authToken);
 }
 
-export async function deleteAllData(deviceId: string): Promise<ActionResponse> {
-  const query = new URLSearchParams({ device_id: deviceId }).toString();
-  return apiFetch<ActionResponse>(`/labbuddy/data?${query}`, {
+export async function deleteAllData(authToken: string): Promise<ActionResponse> {
+  return apiFetch<ActionResponse>('/labbuddy/data', {
     method: 'DELETE',
-  });
+  }, authToken);
 }
 
 export async function createRuntimeUploadContract(
@@ -112,6 +141,6 @@ export async function uploadBlobToContract(contract: RuntimeUploadContract, blob
   });
 
   if (!response.ok) {
-    throw new Error('Upload failed. Please try a clearer image.');
+    throw new ApiError('Upload failed. Please try a clearer image.', response.status);
   }
 }

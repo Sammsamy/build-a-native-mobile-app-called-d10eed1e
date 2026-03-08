@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -60,7 +60,7 @@ class StructuredJSONFormatter(logging.Formatter):
     _STANDARD_ATTRS = _DEFAULT_LOG_RECORD_ATTRS | _RESERVED_STRUCTURED_ATTRS
 
     def format(self, record: logging.LogRecord) -> str:
-        timestamp = datetime.fromtimestamp(record.created, tz=UTC).isoformat(
+        timestamp = datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(
             timespec="milliseconds"
         )
         log_entry: dict[str, Any] = {

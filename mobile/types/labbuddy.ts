@@ -122,8 +122,13 @@ export interface DashboardResponse {
   trend_cta: string;
 }
 
-export interface AnalyzeReportPayload {
+export interface DeviceSessionResponse {
   device_id: string;
+  auth_token: string;
+  expires_at: string;
+}
+
+export interface AnalyzeReportPayload {
   report_label?: string;
   source_type: 'camera' | 'library';
   content_type: string;
@@ -135,12 +140,10 @@ export interface AnalyzeReportPayload {
 }
 
 export interface AskReportQuestionPayload {
-  device_id: string;
   question: string;
 }
 
 export interface UnlockReportPayload {
-  device_id: string;
   product_key: string;
 }
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class BaseSchema(BaseModel):
@@ -150,8 +150,17 @@ class DashboardResponse(BaseSchema):
     trend_cta: str
 
 
-class AnalyzeReportRequest(BaseSchema):
+class DeviceSessionRequest(BaseSchema):
+    device_id: str = Field(min_length=1, max_length=120)
+
+
+class DeviceSessionResponse(BaseSchema):
     device_id: str
+    auth_token: str
+    expires_at: datetime
+
+
+class AnalyzeReportRequest(BaseSchema):
     report_label: str | None = None
     source_type: str
     content_type: str
@@ -161,23 +170,27 @@ class AnalyzeReportRequest(BaseSchema):
     collected_on: date | None = None
     is_historical_upload: bool = False
 
+    @field_validator("source_type", "content_type", "original_filename", "image_object_key")
+    @classmethod
+    def validate_non_empty_string(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Field cannot be empty.")
+        return value.strip()
+
+    @field_validator("image_public_url")
+    @classmethod
+    def validate_image_public_url(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("image_public_url is required. Request a new upload contract and retry.")
+        return value.strip()
+
 
 class AskReportQuestionRequest(BaseSchema):
-    device_id: str
-    question: str
+    question: str = Field(min_length=1)
 
 
 class UnlockReportRequest(BaseSchema):
-    device_id: str
     product_key: str = "report_unlock"
-
-
-class SafetyAcknowledgeRequest(BaseSchema):
-    device_id: str
-
-
-class PurchaseRestoreRequest(BaseSchema):
-    device_id: str
 
 
 class ActionResponse(BaseSchema):
