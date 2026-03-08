@@ -1,22 +1,23 @@
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/cn';
+
 import { Text, TextClassContext } from '@/components/ui/Text';
+import { cn } from '@/lib/cn';
 
 const buttonVariants = cva(
-  'flex-row gap-2 rounded-xl items-center justify-center active:opacity-80',
+  'min-h-[56px] flex-row items-center justify-center gap-2 rounded-[22px] px-6 active:opacity-80',
   {
     variants: {
       variant: {
         primary: 'bg-primary',
-        secondary: 'bg-surface',
+        secondary: 'bg-surface border border-border',
         destructive: 'bg-error',
-        ghost: 'bg-transparent',
+        ghost: 'bg-transparent border border-border',
       },
       size: {
-        default: 'py-3.5 px-6',
-        sm: 'py-2 px-4',
-        lg: 'py-4 px-8',
+        default: 'py-4',
+        sm: 'min-h-[44px] py-2.5 px-4 rounded-2xl',
+        lg: 'min-h-[60px] py-4.5 px-8 rounded-[24px]',
       },
     },
     defaultVariants: {
@@ -26,7 +27,7 @@ const buttonVariants = cva(
   }
 );
 
-const buttonTextVariants = cva('font-semibold', {
+const buttonTextVariants = cva('font-semibold tracking-[-0.15px]', {
   variants: {
     variant: {
       primary: 'text-on-primary',
@@ -35,9 +36,9 @@ const buttonTextVariants = cva('font-semibold', {
       ghost: 'text-primary',
     },
     size: {
-      default: 'text-base',
+      default: 'text-[15px]',
       sm: 'text-sm',
-      lg: 'text-lg',
+      lg: 'text-base',
     },
   },
   defaultVariants: {
@@ -46,21 +47,45 @@ const buttonTextVariants = cva('font-semibold', {
   },
 });
 
+const buttonStyles = StyleSheet.create({
+  primary: {
+    shadowColor: '#0E3D8A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+  },
+  secondary: {
+    shadowColor: '#09121E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+  },
+  destructive: {
+    shadowColor: '#7D2436',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+  },
+  ghost: {},
+});
+
 type ButtonProps = React.ComponentProps<typeof Pressable> &
   VariantProps<typeof buttonVariants>;
 
-function Button({ children, variant, size, className, disabled, ...props }: ButtonProps) {
-  const textClass = buttonTextVariants({ variant, size });
+function Button({ children, variant, size, className, disabled, style, ...props }: ButtonProps) {
+  const resolvedVariant = variant ?? 'primary';
+  const textClass = buttonTextVariants({ variant: resolvedVariant, size });
 
   return (
     <TextClassContext.Provider value={textClass}>
       <Pressable
         disabled={disabled}
         className={cn(
-          buttonVariants({ variant, size }),
+          buttonVariants({ variant: resolvedVariant, size }),
           disabled && 'opacity-50',
           className,
         )}
+        style={[buttonStyles[resolvedVariant], style]}
         {...props}
       >
         {typeof children === 'string' ? (
@@ -73,5 +98,5 @@ function Button({ children, variant, size, className, disabled, ...props }: Butt
   );
 }
 
-export { Button, buttonVariants, buttonTextVariants };
+export { Button, buttonTextVariants, buttonVariants };
 export type { ButtonProps };

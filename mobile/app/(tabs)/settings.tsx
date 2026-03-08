@@ -51,19 +51,18 @@ export default function SettingsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 120, gap: 18 }} showsVerticalScrollIndicator={false}>
-        <SoftSectionCard>
-          <View className="gap-2">
-            <Text className="text-2xl font-semibold" style={{ color: '#132238' }}>Settings</Text>
-            <Text className="text-sm leading-6 text-text-secondary">
-              Built to feel calm, private, and clear—especially when you are already feeling unsure.
-            </Text>
-          </View>
-        </SoftSectionCard>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120, gap: 14 }} showsVerticalScrollIndicator={false}>
+        <View className="gap-2 px-1 pb-1">
+          <Text className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: '#9CC0FF' }}>Settings</Text>
+          <Text className="text-[28px] font-semibold tracking-[-0.45px]" style={{ color: '#F7FBFF' }}>Trust, privacy, and support.</Text>
+          <Text className="text-[15px] leading-6" style={{ color: '#AEBCCD' }}>
+            Built to feel calm, private, and clear—especially when you are already feeling unsure.
+          </Text>
+        </View>
 
         <SoftSectionCard>
           <View className="gap-3">
-            <Text className="text-lg font-semibold">Trust &amp; support</Text>
+            <Text className="text-lg font-semibold tracking-[-0.2px]">Trust &amp; support</Text>
             <SettingsRow icon="person-circle" title="About LabBuddy" description="Meet the founder and learn why LabBuddy exists." onPress={() => router.push('/about')} />
             <SettingsRow icon="lock-closed" title="Privacy" description="See how uploads, identifiers, and saved data are handled." onPress={() => router.push('/privacy')} />
             <SettingsRow icon="shield-checkmark" title="Safety disclaimer" description="Review the educational-only and emergency boundary language." onPress={() => router.push('/safety')} />
@@ -73,15 +72,15 @@ export default function SettingsScreen() {
 
         <SoftSectionCard>
           <View className="gap-3">
-            <Text className="text-lg font-semibold">Purchases</Text>
+            <Text className="text-lg font-semibold tracking-[-0.2px]">Purchases</Text>
             <SettingsRow icon="refresh-circle" title="Restore Purchases" description="Scaffolded for RevenueCat and Apple IAP restore flow." onPress={handleRestorePurchases} />
-            <SettingsRow icon="diamond" title="Yearly plan placeholder" description="Unlimited reports + unlimited Ask AI — planned at $19.99/year." trailing={<Text className="text-xs font-semibold text-primary">Coming soon</Text>} />
+            <SettingsRow icon="diamond" title="Yearly plan placeholder" description="Unlimited reports + unlimited Ask AI — planned at $19.99/year." trailing={<Text className="text-xs font-semibold" style={{ color: '#1E67FF' }}>Coming soon</Text>} />
           </View>
         </SoftSectionCard>
 
         <SoftSectionCard>
           <View className="gap-3">
-            <Text className="text-lg font-semibold">Legal placeholders</Text>
+            <Text className="text-lg font-semibold tracking-[-0.2px]">Legal placeholders</Text>
             <SettingsRow icon="document-text" title="Terms" description="Production legal copy can be dropped in here later." onPress={() => openPlaceholder('Terms')} />
             <SettingsRow icon="receipt" title="Privacy Policy" description="Ready for the final privacy policy language." onPress={() => openPlaceholder('Privacy Policy')} />
           </View>
@@ -89,7 +88,7 @@ export default function SettingsScreen() {
 
         <SoftSectionCard>
           <View className="gap-3">
-            <Text className="text-lg font-semibold">Data controls</Text>
+            <Text className="text-lg font-semibold tracking-[-0.2px]">Data controls</Text>
             <SettingsRow icon="trash" title="Delete all my data" description="Remove saved reports, structured results, and local LabBuddy data." onPress={handleDeleteData} destructive />
           </View>
         </SoftSectionCard>

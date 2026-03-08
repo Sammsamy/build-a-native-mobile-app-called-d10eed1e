@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { Stack, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import { LabBuddyProvider } from '@/providers/labbuddy-provider';
 // CRITICAL: DO NOT REMOVE - Required for Appifex error tracking
 import { getNavigationIntegration, wrapWithSentry } from '../_system/sentry';
@@ -23,8 +24,8 @@ import { ErrorBoundary } from '../_system/ErrorBoundary';
 import { GlobalErrorOverlay } from '../_system/GlobalErrorOverlay';
 
 function RootLayout() {
-  // Register navigation container with Sentry for route tracking
   const ref = useNavigationContainerRef();
+
   useEffect(() => {
     const navIntegration = getNavigationIntegration();
     if (ref && navIntegration) {
@@ -38,7 +39,20 @@ function RootLayout() {
         <LabBuddyProvider>
           {/* CRITICAL: DO NOT REMOVE screenOptions - prevents "< (tabs)" from appearing on screens */}
           {/* CRITICAL: DO NOT REMOVE Stack.Screen children - causes "This screen does not exist" error! */}
-          <Stack screenOptions={{ headerShown: false, headerBackButtonDisplayMode: 'minimal' }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              headerBackButtonDisplayMode: 'minimal',
+              headerStyle: { backgroundColor: '#0D1522' },
+              headerShadowVisible: false,
+              headerTintColor: '#F7FBFF',
+              headerTitleStyle: {
+                color: '#F7FBFF',
+                fontWeight: '600',
+              },
+              contentStyle: { backgroundColor: '#0D1522' },
+            }}
+          >
             {/* CRITICAL: index screen MUST be registered - without this the app shows "This screen does not exist" on launch */}
             <Stack.Screen name="index" />
             {/* CRITICAL: (tabs) MUST be registered when using tab navigation - without this, redirecting to /(tabs) shows "This screen does not exist" */}
@@ -48,7 +62,7 @@ function RootLayout() {
             <Stack.Screen name="privacy" options={{ headerShown: true, title: 'Privacy' }} />
             <Stack.Screen name="safety" options={{ headerShown: true, title: 'Safety disclaimer' }} />
           </Stack>
-          <StatusBar style="dark" />
+          <StatusBar style="light" />
           {/* CRITICAL: DO NOT REMOVE - Required for Appifex sandbox switching */}
           <AppifexFloatingButton />
           {/* CRITICAL: DO NOT REMOVE - Required for displaying user-friendly error modal */}
@@ -59,5 +73,4 @@ function RootLayout() {
   );
 }
 
-// CRITICAL: Wrap with Sentry to capture render errors and navigation failures
 export default wrapWithSentry(RootLayout);

@@ -3,8 +3,8 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { useMemo } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 
 import {
   GradientHeroCard,
@@ -27,12 +27,15 @@ export default function HomeScreen() {
   const unlockedReports = dashboard?.profile.unlocked_reports ?? 0;
   const totalReports = dashboard?.profile.total_reports ?? 0;
 
-  const teaserSteps = useMemo(() => [
-    'Free preview summary',
-    'One Ask AI follow-up',
-    'Unlock full report + save to history',
-    'Add older reports for trendlines',
-  ], []);
+  const teaserSteps = useMemo(
+    () => [
+      'Free preview summary',
+      'One Ask AI follow-up',
+      'Unlock full report + save to history',
+      'Add older reports for trendlines',
+    ],
+    [],
+  );
 
   async function handleSelectedAsset(asset: ImagePickerAsset, sourceType: 'camera' | 'library') {
     try {
@@ -87,37 +90,43 @@ export default function HomeScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 120, gap: 18 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120, gap: 14 }} showsVerticalScrollIndicator={false}>
+        <View className="gap-2 px-1 pb-1">
+          <Text className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: '#9CC0FF' }}>LabBuddy</Text>
+          <Text className="text-[28px] font-semibold tracking-[-0.45px]" style={{ color: '#F7FBFF' }}>Calm clarity for your lab results.</Text>
+          <Text className="text-[15px] leading-6" style={{ color: '#AEBCCD' }}>
+            Start with a reassuring preview, then unlock deeper explanation only when you need it.
+          </Text>
+        </View>
+
         <GradientHeroCard>
           <View className="gap-6">
             <View className="gap-3">
-              <View className="self-start rounded-full px-3 py-2 flex-row items-center gap-2" style={{ backgroundColor: '#FFFFFFCC' }}>
+              <View className="self-start flex-row items-center gap-2 rounded-full px-3 py-2" style={{ backgroundColor: '#FFFFFFD6' }}>
                 <Ionicons name="shield-checkmark" size={16} color="#1E67FF" />
                 <Text className="text-xs font-semibold" style={{ color: '#1E67FF' }}>Calm, simple, trustworthy</Text>
               </View>
               <View className="gap-2">
-                <Text className="text-[34px] leading-[40px] font-semibold tracking-[-0.6px]" style={{ color: '#132238' }}>LabBuddy</Text>
-                <Text className="text-base leading-7" style={{ color: '#4A5B73' }}>Understand your lab results with confidence.</Text>
+                <Text className="text-[34px] font-semibold leading-[40px] tracking-[-0.6px]" style={{ color: '#12243A' }}>Upload a report photo or screenshot</Text>
+                <Text className="text-base leading-7" style={{ color: '#55677F' }}>LabBuddy turns it into a clear first read without changing your care plan.</Text>
               </View>
             </View>
 
             <View className="gap-3">
-              <Button className="rounded-[24px]" onPress={() => void handleCamera()}>
-                Scan my labs
-              </Button>
-              <Button variant="secondary" className="rounded-[24px]" onPress={() => void handleLibrary()}>
+              <Button onPress={() => void handleCamera()}>Scan my labs</Button>
+              <Button variant="secondary" onPress={() => void handleLibrary()}>
                 Upload a photo or screenshot
               </Button>
             </View>
 
             <View className="flex-row gap-4">
-              <View className="flex-1 rounded-[24px] p-4" style={{ backgroundColor: '#FFFFFFCC' }}>
+              <View className="flex-1 rounded-[24px] border border-border p-4" style={{ backgroundColor: '#FFFFFFD9' }}>
                 <Text className="text-xs uppercase tracking-[1px] text-text-tertiary">Unlocked reports</Text>
-                <Text className="text-2xl font-semibold mt-2" style={{ color: '#132238' }}>{unlockedReports}</Text>
+                <Text className="mt-2 text-2xl font-semibold tracking-[-0.25px]" style={{ color: '#12243A' }}>{unlockedReports}</Text>
               </View>
-              <View className="flex-1 rounded-[24px] p-4" style={{ backgroundColor: '#FFFFFFCC' }}>
+              <View className="flex-1 rounded-[24px] border border-border p-4" style={{ backgroundColor: '#FFFFFFD9' }}>
                 <Text className="text-xs uppercase tracking-[1px] text-text-tertiary">History depth</Text>
-                <Text className="text-2xl font-semibold mt-2" style={{ color: '#132238' }}>{totalReports}</Text>
+                <Text className="mt-2 text-2xl font-semibold tracking-[-0.25px]" style={{ color: '#12243A' }}>{totalReports}</Text>
               </View>
             </View>
           </View>
@@ -127,12 +136,12 @@ export default function HomeScreen() {
           <View className="gap-4">
             <View className="flex-row items-start justify-between gap-4">
               <View className="flex-1 gap-2">
-                <Text className="text-lg font-semibold">{dashboard?.trend_cta ?? 'Unlock your 5-year trends'}</Text>
+                <Text className="text-lg font-semibold tracking-[-0.2px]">{dashboard?.trend_cta ?? 'Unlock your 5-year trends'}</Text>
                 <Text className="text-sm leading-6 text-text-secondary">
                   Upload older reports to see how markers like LDL and A1C change over time.
                 </Text>
               </View>
-              <View className="h-12 w-12 rounded-2xl items-center justify-center" style={{ backgroundColor: '#EAF7F0' }}>
+              <View className="h-12 w-12 items-center justify-center rounded-[20px]" style={{ backgroundColor: '#EAF7F0' }}>
                 <Ionicons name="sparkles" size={22} color="#2F8F5B" />
               </View>
             </View>
@@ -140,7 +149,7 @@ export default function HomeScreen() {
               score={timelineScore}
               caption={dashboard?.reports[0]?.timeline_hint ?? 'Upload 2 older reports to see your LDL/A1C timeline.'}
             />
-            <Button variant="secondary" className="rounded-[22px]" onPress={() => router.push('/(tabs)/history')}>
+            <Button variant="secondary" onPress={() => router.push('/(tabs)/history')}>
               Unlock your 5-year trends
             </Button>
           </View>
@@ -149,15 +158,15 @@ export default function HomeScreen() {
         <SoftSectionCard>
           <View className="gap-4">
             <View className="gap-1">
-              <Text className="text-lg font-semibold">What you get with each report</Text>
+              <Text className="text-lg font-semibold tracking-[-0.2px]">What you get with each report</Text>
               <Text className="text-sm leading-6 text-text-secondary">
                 Enough clarity to reduce panic first, then deeper context once you unlock the full report.
               </Text>
             </View>
             <View className="gap-3">
               {teaserSteps.map((step, index) => (
-                <View key={step} className="flex-row items-center gap-3">
-                  <View className="h-8 w-8 rounded-full items-center justify-center" style={{ backgroundColor: '#EEF4FF' }}>
+                <View key={step} className="flex-row items-center gap-3 rounded-[22px] border border-border px-3 py-3.5" style={{ backgroundColor: '#F1F6FD' }}>
+                  <View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: '#EAF1FF' }}>
                     <Text className="text-sm font-semibold" style={{ color: '#1E67FF' }}>{index + 1}</Text>
                   </View>
                   <Text className="flex-1 text-sm leading-6 text-text-secondary">{step}</Text>
@@ -178,7 +187,7 @@ export default function HomeScreen() {
         ) : (
           <SoftSectionCard>
             <View className="gap-3">
-              <Text className="text-lg font-semibold">Your first preview will appear here</Text>
+              <Text className="text-lg font-semibold tracking-[-0.2px]">Your first preview will appear here</Text>
               <Text className="text-sm leading-6 text-text-secondary">
                 Start with a clear photo or screenshot of the lab table page. PDFs are not part of this MVP.
               </Text>

@@ -1,7 +1,8 @@
 import { View } from 'react-native';
+
+import { Text, TextClassContext } from '@/components/ui/Text';
 import { cn } from '@/lib/cn';
 import { shadows } from '@/theme/shadows';
-import { Text, TextClassContext } from '@/components/ui/Text';
 
 interface CardProps {
   children: React.ReactNode;
@@ -11,7 +12,10 @@ interface CardProps {
 export function Card({ children, className }: CardProps) {
   return (
     <TextClassContext.Provider value="text-text">
-      <View className={cn('bg-surface-elevated rounded-2xl', className)} style={shadows.md}>
+      <View
+        className={cn('rounded-[28px] border border-border bg-surface-elevated', className)}
+        style={shadows.md}
+      >
         {children}
       </View>
     </TextClassContext.Provider>
@@ -23,17 +27,17 @@ export function CardHeader({ children, className }: CardProps) {
 }
 
 export function CardTitle({ children, className }: { children: string; className?: string }) {
-  return <Text className={cn('text-lg font-semibold', className)}>{children}</Text>;
+  return <Text className={cn('text-lg font-semibold tracking-[-0.2px]', className)}>{children}</Text>;
 }
 
 export function CardDescription({ children, className }: { children: string; className?: string }) {
-  return <Text className={cn('text-sm text-text-secondary mt-1', className)}>{children}</Text>;
+  return <Text className={cn('mt-1 text-sm leading-6 text-text-secondary', className)}>{children}</Text>;
 }
 
 export function CardContent({ children, className }: CardProps) {
-  return <View className={cn('px-6 py-4', className)}>{children}</View>;
+  return <View className={cn('px-6 py-5', className)}>{children}</View>;
 }
 
 export function CardFooter({ children, className }: CardProps) {
-  return <View className={cn('px-6 pb-6 pt-2 flex-row justify-end gap-3', className)}>{children}</View>;
+  return <View className={cn('flex-row justify-end gap-3 px-6 pb-6 pt-2', className)}>{children}</View>;
 }
